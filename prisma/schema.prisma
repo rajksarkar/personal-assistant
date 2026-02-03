@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  googleEmail        String   @unique
+  googleAccessToken  String?
+  googleRefreshToken String?
+  tokenExpiry        DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  contextName     String
+  contextPhone    String
+  contextNotes    String?
+  instructionText String
+  status          String   @default("DRAFT")
+  twilioCallSid   String?
+  outcomeId       String?   @unique
+  outcome         Outcome?
+  transcriptEvents TranscriptEvent[]
+}
+
+model TranscriptEvent {
+  id      String   @id @default(cuid())
+  taskId  String
+  task    Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  ts      DateTime @default(now())
+  speaker String
+  text    String
+}
+
+model Outcome {
+  id                 String   @id @default(cuid())
+  taskId             String   @unique
+  task               Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  summaryText        String?
+  extractedFieldsJson String?
+  calendarEventId    String?
+  needsUserAction    Boolean  @default(false)
+  createdAt          DateTime @default(now())
+}
