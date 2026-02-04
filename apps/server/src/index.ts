@@ -59,7 +59,7 @@ app.get("/api/twilio/status", (_req, res) => {
       : [
           !hasClient && "Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in .env",
           !hasFrom && "Set TWILIO_FROM_NUMBER (your Twilio voice number) in .env",
-          !hasBaseUrl && "Set PUBLIC_BASE_URL (e.g. https://xxxx.ngrok.io) and run npm run dev:tunnel",
+          !hasBaseUrl && "Set PUBLIC_BASE_URL (e.g. https://xxxx.trycloudflare.com) and run npm run dev:tunnel",
         ]
           .filter(Boolean)
           .join(". "),

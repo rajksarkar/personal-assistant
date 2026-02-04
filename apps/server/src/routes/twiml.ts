@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import twilio from "twilio";
 
 const VoiceResponse = twilio.twiml.VoiceResponse;
-const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "https://example.ngrok.io";
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || "https://example.trycloudflare.com";
 
 export const twimlRoutes = Router();
 

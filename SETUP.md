@@ -60,7 +60,7 @@ Replace with your real Account SID, Auth Token, and Voice number.
 
 2. **If you click “Start Call” and nothing happens**  
    - The UI now shows a red message when Twilio isn’t configured (e.g. “Twilio not configured; set TWILIO_* and PUBLIC_BASE_URL”).
-   - Ensure **PUBLIC_BASE_URL** is set to your tunnel URL (e.g. `https://xxxx.ngrok.io`) and the tunnel is running (`npm run dev:tunnel`), then restart the server.
+   - Ensure **PUBLIC_BASE_URL** is set to your tunnel URL (e.g. `https://xxxx.trycloudflare.com`) and the tunnel is running (`npm run dev:tunnel`), then restart the server.
 
 3. **Verify the Twilio number**  
    - [Console → Phone Numbers → Manage → Active numbers](https://console.twilio.com/us1/develop/phone-numbers/manage/incoming): your number must have **Voice** enabled.
@@ -126,43 +126,43 @@ Twilio must reach your server over the internet for:
 - Media: WebSocket `wss://.../ws/twilio-media`
 - Status: `POST /api/twilio/status?taskId=...`
 
-So your server needs a **public HTTPS URL**. For local dev we use a tunnel (e.g. ngrok).
+So your server needs a **public HTTPS URL**. For local dev we use Cloudflare Tunnel.
 
 1. **Start a tunnel to port 4000**
    - From the repo root:
      ```bash
-     pnpm dev:tunnel
+     npm run dev:tunnel
      ```
-   - Or, if you use ngrok directly:
+   - Or, if you use cloudflared directly:
      ```bash
-     ngrok http 4000
+     cloudflared tunnel --url http://localhost:4000
      ```
 
-2. **Copy the HTTPS URL**  
-   Example: `https://a1b2c3d4.ngrok-free.app`  
+2. **Copy the HTTPS URL**
+   Example: `https://xxxx-yyyy-zzzz.trycloudflare.com`
    Do **not** add a trailing slash.
 
 3. **Put it in `.env`**
    ```bash
-   PUBLIC_BASE_URL=https://a1b2c3d4.ngrok-free.app
+   PUBLIC_BASE_URL=https://xxxx-yyyy-zzzz.trycloudflare.com
    ```
 
-4. **Restart the server**  
+4. **Restart the server**
    So it picks up the new `PUBLIC_BASE_URL`.
 
 **Flow:**
 
-1. Start tunnel: `pnpm dev:tunnel` (or `ngrok http 4000`).
+1. Start tunnel: `npm run dev:tunnel`.
 2. Copy the HTTPS URL into `PUBLIC_BASE_URL` in `.env`.
-3. Restart server: stop and run `pnpm dev` again.
-4. When you click “Start Call”, Twilio will use this URL to fetch TwiML and open the media WebSocket.
+3. Restart server: stop and run `npm run dev` again.
+4. When you click "Start Call", Twilio will use this URL to fetch TwiML and open the media WebSocket.
 
-If you change the tunnel URL (e.g. new ngrok session), update `PUBLIC_BASE_URL` and restart the server again.
+If you change the tunnel URL (e.g. new cloudflared session), update `PUBLIC_BASE_URL` and restart the server again.
 
 **If Twilio reports "Got HTTP 404" to `/api/twilio/status` or `/api/twiml/stream`**
 
-1. **Tunnel and server** – The tunnel (e.g. `ngrok http 4000`) must be running and forwarding to the **same port** the server uses (default 4000). The server must be running when Twilio calls.
-2. **URL matches** – `PUBLIC_BASE_URL` in `.env` must match the tunnel URL **exactly** (e.g. `https://a1b2c3d4.ngrok-free.app`), no trailing slash. If you restarted ngrok and got a new URL, update `.env` and restart the server.
+1. **Tunnel and server** – The tunnel (e.g. `cloudflared tunnel --url http://localhost:4000`) must be running and forwarding to the **same port** the server uses (default 4000). The server must be running when Twilio calls.
+2. **URL matches** – `PUBLIC_BASE_URL` in `.env` must match the tunnel URL **exactly** (e.g. `https://xxxx-yyyy.trycloudflare.com`), no trailing slash. If you restarted cloudflared and got a new URL, update `.env` and restart the server.
 3. **Test from your machine** (replace with your real tunnel URL):
    ```bash
    # TwiML (Twilio GETs this when the call starts)
@@ -185,6 +185,6 @@ If you change the tunnel URL (e.g. new ngrok session), update `PUBLIC_BASE_URL` 
 | `GOOGLE_CLIENT_ID`   | Google Cloud → Credentials → OAuth client | `xxx.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | Same OAuth client                     | `GOCSPX-...`                        |
 | `GOOGLE_REDIRECT_URI` | Fixed for local dev                   | `http://localhost:4000/auth/google/callback` |
-| `PUBLIC_BASE_URL`    | Tunnel (ngrok) output                  | `https://xxxx.ngrok-free.app`       |
+| `PUBLIC_BASE_URL`    | Cloudflare tunnel output               | `https://xxxx.trycloudflare.com`    |
 
 All of these go in **one `.env` file** at the repo root: `personal-assistant/.env`.

@@ -7,9 +7,9 @@ import type { TaskStatus, TranscriptSpeaker } from "../types";
 
 const OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
 
-const SYSTEM_INSTRUCTIONS = `You are Raj's personal AI assistant making a phone call. This could be ANY type of call - reminders to friends/family, thank you messages, scheduling, or anything else.
+const SYSTEM_INSTRUCTIONS = `You are a personal assistant making a phone call. This could be ANY type of call - reminders to friends/family, thank you messages, scheduling, or anything else.
 
-When the call connects, start with: "Hello, this is an AI assistant calling on behalf of Raj."
+When the call connects, start with: "Hello, this is personal assistant calling for Raj Sarkar."
 
 Then IMMEDIATELY deliver the specific message or task described in the INSTRUCTION section below. Do exactly what the instruction says - nothing more, nothing less.
 

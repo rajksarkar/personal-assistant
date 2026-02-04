@@ -13,7 +13,7 @@ npm install              # Install all dependencies (monorepo)
 npm run dev              # Run web + server concurrently
 npm run dev:server       # Server only (Express on :4000)
 npm run dev:web          # Next.js only (:3000)
-npm run dev:tunnel       # ngrok tunnel for Twilio webhooks (set PUBLIC_BASE_URL after)
+npm run dev:tunnel       # Cloudflare tunnel for Twilio webhooks (update PUBLIC_BASE_URL with new URL)
 
 npm run db:generate      # Generate Prisma client
 npm run db:push          # Push schema to SQLite
