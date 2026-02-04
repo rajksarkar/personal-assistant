@@ -38,13 +38,14 @@ export async function createCalendarEvent(
   ]
     .filter(Boolean)
     .join("\n");
+  const timezone = process.env.TIMEZONE || "America/New_York";
   const event = await calendar.events.insert({
     calendarId: "primary",
     requestBody: {
       summary: title,
       description,
-      start: { dateTime: startDate.toISOString(), timeZone: "UTC" },
-      end: { dateTime: endDate.toISOString(), timeZone: "UTC" },
+      start: { dateTime: startDate.toISOString(), timeZone: timezone },
+      end: { dateTime: endDate.toISOString(), timeZone: timezone },
     },
   });
   return event.data.id ?? "";
@@ -58,8 +59,47 @@ export function getAuthUrl(clientId: string, redirectUri: string): string {
       "https://www.googleapis.com/auth/calendar.events",
       "https://www.googleapis.com/auth/calendar",
       "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/gmail.send",
     ],
     prompt: "consent",
+  });
+}
+
+export async function sendEmailSummary(
+  accessToken: string,
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string,
+  toEmail: string,
+  subject: string,
+  body: string
+): Promise<void> {
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, process.env.GOOGLE_REDIRECT_URI);
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  const message = [
+    `To: ${toEmail}`,
+    `Subject: ${subject}`,
+    "Content-Type: text/plain; charset=utf-8",
+    "",
+    body,
+  ].join("\n");
+
+  const encodedMessage = Buffer.from(message)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  await gmail.users.messages.send({
+    userId: "me",
+    requestBody: {
+      raw: encodedMessage,
+    },
   });
 }
 

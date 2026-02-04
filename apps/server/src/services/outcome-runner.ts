@@ -1,7 +1,7 @@
 import { prisma } from "../db";
 import { extractOutcomeFromTranscript } from "./outcome-extraction";
 import { broadcastOutcome } from "../ws/ui";
-import { createCalendarEvent } from "./google-calendar";
+import { createCalendarEvent, sendEmailSummary } from "./google-calendar";
 import type { TaskStatus } from "../types";
 
 export async function runOutcomeExtraction(taskId: string): Promise<void> {
@@ -77,28 +77,78 @@ export async function runOutcomeExtraction(taskId: string): Promise<void> {
     },
   });
   broadcastOutcome(taskId, { ...outcome, taskId: task.id });
-  if (!needsUserAction && (outcome.extractedFieldsJson ? JSON.parse(outcome.extractedFieldsJson).datetime_start : false)) {
-    const task = await prisma.task.findUnique({ where: { id: taskId } });
-    const user = await prisma.user.findFirst();
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    if (task && user?.googleAccessToken && user?.googleRefreshToken && clientId && clientSecret) {
+  // Auto-create calendar event for reservations/appointments
+  const extractedFields = outcome.extractedFieldsJson ? JSON.parse(outcome.extractedFieldsJson) : {};
+  const hasDatetime = !!extractedFields.datetime_start;
+
+  const taskForEmail = await prisma.task.findUnique({ where: { id: taskId } });
+  const user = await prisma.user.findFirst();
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!needsUserAction && hasDatetime) {
+    if (taskForEmail && user?.googleAccessToken && user?.googleRefreshToken && clientId && clientSecret) {
       try {
         const eventId = await createCalendarEvent(
           user.googleAccessToken,
           user.googleRefreshToken,
           clientId,
           clientSecret,
-          task.contextName,
+          taskForEmail.contextName,
           outcome
         );
         await prisma.outcome.update({
           where: { id: outcome.id },
           data: { calendarEventId: eventId },
         });
+        console.log("Calendar event created:", eventId);
       } catch (e) {
         console.error("Auto calendar create failed:", e);
       }
+    }
+  }
+
+  // Send email summary for all completed calls
+  if (taskForEmail && user?.googleAccessToken && user?.googleRefreshToken && user?.googleEmail && clientId && clientSecret) {
+    try {
+      const subject = `Call Summary: ${taskForEmail.contextName}`;
+      const calendarNote = hasDatetime && !needsUserAction
+        ? "\n\n📅 A calendar event has been automatically created for this reservation."
+        : "";
+      const body = [
+        `Call to: ${taskForEmail.contextName}`,
+        `Phone: ${taskForEmail.contextPhone}`,
+        `Instruction: ${taskForEmail.instructionText}`,
+        "",
+        "--- Summary ---",
+        outcome.summaryText || "No summary available.",
+        "",
+        "--- Extracted Details ---",
+        extractedFields.reservation_name ? `Name: ${extractedFields.reservation_name}` : null,
+        extractedFields.business_or_person ? `Business/Person: ${extractedFields.business_or_person}` : null,
+        extractedFields.datetime_start ? `Date/Time: ${extractedFields.datetime_start}` : null,
+        extractedFields.party_size ? `Party Size: ${extractedFields.party_size}` : null,
+        extractedFields.confirmation_number ? `Confirmation #: ${extractedFields.confirmation_number}` : null,
+        extractedFields.address ? `Address: ${extractedFields.address}` : null,
+        extractedFields.special_notes ? `Notes: ${extractedFields.special_notes}` : null,
+        calendarNote,
+        "",
+        "--- Full Transcript ---",
+        transcriptText,
+      ].filter(Boolean).join("\n");
+
+      await sendEmailSummary(
+        user.googleAccessToken,
+        user.googleRefreshToken,
+        clientId,
+        clientSecret,
+        user.googleEmail,
+        subject,
+        body
+      );
+      console.log("Email summary sent to:", user.googleEmail);
+    } catch (e) {
+      console.error("Email summary failed:", e);
     }
   }
 }

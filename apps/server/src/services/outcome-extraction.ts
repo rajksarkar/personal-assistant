@@ -1,8 +1,12 @@
-const EXTRACTION_PROMPT = `You are extracting structured reservation/appointment details from a phone call transcript.
+function getExtractionPrompt(todayDate: string, timezone: string): string {
+  return `You are extracting structured reservation/appointment details from a phone call transcript.
+Today's date is: ${todayDate}
+Timezone: ${timezone}
+
 Return a single JSON object with these fields (use null for missing):
 - reservation_name: string
 - business_or_person: string
-- datetime_start: string (ISO 8601 or clear date/time description)
+- datetime_start: string (ISO 8601 format with timezone, e.g. "2026-02-04T20:00:00-05:00". Resolve relative dates like "tomorrow" using today's date above)
 - duration_minutes: number
 - party_size: number or null
 - confirmation_number: string or null
@@ -11,7 +15,12 @@ Return a single JSON object with these fields (use null for missing):
 - confidence: number 0-1
 - needs_user_action: boolean
 - needs_user_action_reason: string or null (why user must confirm, e.g. "datetime ambiguous")
+
+IMPORTANT:
+- Convert relative dates (tomorrow, next week, etc.) to absolute ISO 8601 dates based on today's date.
+- Use the timezone offset for the datetime (EST = -05:00).
 Return only valid JSON, no markdown or explanation.`;
+}
 
 export interface ExtractedFields {
   reservation_name?: string;
@@ -40,7 +49,7 @@ export async function extractOutcomeFromTranscript(
     body: JSON.stringify({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: EXTRACTION_PROMPT },
+        { role: "system", content: getExtractionPrompt(new Date().toISOString().split("T")[0], process.env.TIMEZONE || "America/New_York (EST)") },
         { role: "user", content: `Transcript:\n\n${transcriptText}` },
       ],
       response_format: { type: "json_object" },

@@ -76,8 +76,8 @@ export function broadcastToTask(taskId: string, message: object): void {
   });
 }
 
-export function broadcastStatus(taskId: string, status: TaskStatus): void {
-  broadcastToTask(taskId, { type: "status", payload: { status } });
+export function broadcastStatus(taskId: string, status: TaskStatus, failureReason?: string): void {
+  broadcastToTask(taskId, { type: "status", payload: { status, failureReason } });
 }
 
 export function broadcastTranscript(taskId: string, event: { id: string; ts: string; speaker: string; text: string }): void {

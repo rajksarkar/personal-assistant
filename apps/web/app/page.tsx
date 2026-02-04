@@ -47,6 +47,21 @@ type TaskStatus =
   | "FAILED"
   | "NEEDS_USER_ACTION";
 
+function getFailureMessage(reason: string | null): string {
+  switch (reason) {
+    case "busy":
+      return "Line busy - the recipient is on another call";
+    case "no-answer":
+      return "No answer - the recipient didn't pick up";
+    case "canceled":
+      return "Call was canceled";
+    case "failed":
+      return "Call failed - please check the phone number";
+    default:
+      return "Call failed";
+  }
+}
+
 function NewCallScreen() {
   const [contextName, setContextName] = useState("");
   const [contextPhone, setContextPhone] = useState("");
@@ -60,6 +75,7 @@ function NewCallScreen() {
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failureReason, setFailureReason] = useState<string | null>(null);
 
   useEffect(() => {
     if (callStartTime == null || (status !== "CALLING" && status !== "IN_PROGRESS")) return;
@@ -90,6 +106,7 @@ function NewCallScreen() {
       setStatus("DRAFT");
       setTranscript([]);
       setOutcome(null);
+      setFailureReason(null);
 
       const startRes = await fetch(`${API_BASE}/api/tasks/${task.id}/start-call`, { method: "POST" });
       const startData = await startRes.json().catch(() => ({}));
@@ -105,7 +122,10 @@ function NewCallScreen() {
       const ws = new WebSocket(`${WS_BASE}/ws/ui?taskId=${task.id}`);
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
-        if (msg.type === "status") setStatus(msg.payload.status);
+        if (msg.type === "status") {
+          setStatus(msg.payload.status);
+          if (msg.payload.failureReason) setFailureReason(msg.payload.failureReason);
+        }
         if (msg.type === "transcript") {
           setTranscript((prev) => [...prev, msg.payload]);
         }
@@ -284,7 +304,7 @@ function NewCallScreen() {
               fontWeight: 500,
             }}
           >
-            {status}
+            {status === "FAILED" ? getFailureMessage(failureReason) : status}
           </span>
           {callStartTime !== null && (status === "CALLING" || status === "IN_PROGRESS") && (
             <span style={{ color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>

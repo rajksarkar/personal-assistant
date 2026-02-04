@@ -3,12 +3,15 @@ import { prisma } from "../db";
 import { getAuthUrl, getTokensFromCode } from "../services/google-calendar";
 
 export const authRoutes = Router();
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:4000/auth/google/callback";
 
 authRoutes.get("/auth/google", (_req: Request, res: Response) => {
-  const url = getAuthUrl(GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI);
+  const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:4000/auth/google/callback";
+  if (!clientId) {
+    res.status(500).send("GOOGLE_CLIENT_ID not configured in .env");
+    return;
+  }
+  const url = getAuthUrl(clientId, redirectUri);
   res.redirect(url);
 });
 
@@ -18,12 +21,15 @@ authRoutes.get("/auth/google/callback", async (req: Request, res: Response) => {
     res.status(400).send("Missing code");
     return;
   }
+  const clientId = process.env.GOOGLE_CLIENT_ID ?? "";
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI ?? "http://localhost:4000/auth/google/callback";
   try {
     const { accessToken, refreshToken, email } = await getTokensFromCode(
       code,
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI
+      clientId,
+      clientSecret,
+      redirectUri
     );
     // MVP: store in DB; production should encrypt tokens.
     await prisma.user.upsert({

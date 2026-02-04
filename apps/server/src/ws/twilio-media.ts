@@ -127,6 +127,11 @@ export function handleTwilioMediaConnection(ws: WebSocket, req: IncomingMessage)
               try {
                 const response = JSON.parse(openAiData.toString()) as OpenAIMessage;
 
+                // Debug: log all message types
+                if (response.type !== "response.audio.delta") {
+                  console.log("OpenAI:", response.type);
+                }
+
                 // Wait for session to be configured before starting
                 if (response.type === "session.updated" && !sessionConfigured) {
                   sessionConfigured = true;

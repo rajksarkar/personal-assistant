@@ -80,8 +80,8 @@ app.post("/api/twilio/status", (req, res) => {
   const failedStatuses = ["busy", "no-answer", "failed", "canceled"];
   if (callStatus && failedStatuses.includes(callStatus)) {
     prisma.task
-      .update({ where: { id: taskId }, data: { status: "FAILED" } })
-      .then(() => broadcastStatus(taskId, "FAILED"))
+      .update({ where: { id: taskId }, data: { status: "FAILED", failureReason: callStatus } })
+      .then(() => broadcastStatus(taskId, "FAILED", callStatus))
       .catch((e) => console.error("Twilio status callback:", e));
   }
 });

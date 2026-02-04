@@ -26,6 +26,7 @@ model Task {
   contextNotes    String?
   instructionText String
   status          String   @default("DRAFT")
+  failureReason   String?
   twilioCallSid   String?
   outcomeId       String?   @unique
   outcome         Outcome?
